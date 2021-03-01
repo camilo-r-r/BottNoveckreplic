@@ -1,400 +1,420 @@
-// This is a simple demo script, feel free to edit or delete it
-// Find a tutorial and the list of availalbe elements at:
-// https://www.pcibex.net/documentation/
 
-PennController.ResetPrefix(null) // Shorten command names (keep this line here)
-
-// Show the 'intro' trial first, then all the 'experiment' trials in a random order
-// then send the results and finally show the trial labeled 'bye'
-Sequence("introduction","consent", "instructions","startpractice", "practiceblock", "beginblock1", randomize("block1"), "beginblock2", randomize("block2"), "beginblock3", randomize("block3"), "exitform", "bye" )
+PennController.AddHost("https://filedn.com/lDf2Oa0trFMzhcSFiv5VDuu/ibex/");
+PennController.ResetPrefix(null); // Shorten command names (keep this line here)
+ PennController.DebugOff() // use for the final version
 
 
-// What is in Header happens at the beginning of every single trial
-Header(
-    // We will use this global Var element later to store the participant's name
-    newVar("ParticipantName")
-        .global()
-    ,
-    // Delay of 250ms before every trial
-    newTimer(250)
-        .start()
-        .wait()
-)
-.log( "Name" , getVar("ParticipantName") )
-// This log command adds a column reporting the participant's name to every line saved to the results
+//Create picking function; needed for breaks
+function Pick(set,n) {
+    assert(set instanceof Object, "First argument of pick cannot be a plain string" );
+    n = Number(n);
+    if (isNaN(n) || n<0) 
+        n = 0;
+    this.args = [set];
+    this.runSet = null;
+    set.remainingSet = null;
+    this.run = arrays => {
+        if (this.runSet!==null) return this.runSet;
+        const newArray = [];
+        if (set.remainingSet===null) {
+        if (set.runSet instanceof Array) set.remainingSet = [...set.runSet];
+        else set.remainingSet = arrays[0];
+    }
+        for (let i = 0; i < n && set.remainingSet.length; i++)
+            newArray.push( set.remainingSet.shift() );
+    this.runSet = [...newArray];
+    return newArray;
+}
+}
+    function pick(set, n) { return new Pick(set,n); }
+        
+        critical = randomizeNoMoreThan(anyOf("1", "2","3","4","5","6"),2);
+
+PennController.Sequence("welcome", "practiceblock", "beginblock1",
+                        pick(critical,18),"beginblock2",
+                        pick(critical,18),"beginblock3",
+                        pick(critical,18), "exitform","send", "bye");
 
 
-newTrial( "intro" ,
-    newText("<p>Welcome to the PCIbex demo experiment.</p><p>Please enter your name below and press Enter:</p>")
+// Welcome text /////////////
+PennController( "welcome",
+    defaultText
         .print()
     ,
-    newTextInput()
+    newText("text1", "<h2>Welcome!</h2>")
+    ,
+    newText("text3", "<p>Thank you for your participation. This is a study about language comprehension conducted by the Humboldt University of Berlin.</p>")
+    ,
+    newText("text4", "<p>You are going to read a few sentences and decide whether they are true or false.</p>")
+    ,
+    newText("text5", "<p>The experiment will take about 10 minutes. Please make sure to complete the experiment without interruption.</p>")
+    ,
+    newText("text66", "<p>It is important that you complete the task in a quiet environment. Please turn off your computer's speakers throughout the experiment. </p>")
+    ,
+    newText("text2", "<p>Your task will be explained in the following pages.</p>")
+    ,
+    
+    newButton("button1", "continue")
         .print()
-        .wait()                 // The next command won't be executed until Enter is pressed
-        .setVar( "ParticipantName" )
-        // This setVar command stores the value from the TextInput element into the Var element
-)
-
-
-newTrial("introduction",
-    newHtml("example_intro.html")
-    .settings.log()
-    .print(),
-    newButton("button1", "continue")
-    .print()
-    .wait(),
-    getButton("button1")
-    .remove()
-)
-
-newTrial("consent",
-    newHtml("consentandinfo.html")
-    .settings.log()
-    .print(),
-    newButton("button1", "continue")
-    .print()
-    .wait(),
-    getButton("button1")
-    .remove()
-)
-
-
-newTrial("instructions",
-    newHtml("instructions1", "instructionspage1.html")
-    .print(),
-    newKey(" ")
-    .wait(),
-    getHtml("instructions1")
-    .remove(),
-    newHtml("instructions2", "instructionspage2.html")
-    .print(),
-    newKey(" ")
-    .wait(),
-    getHtml("instructions2")
-    .remove(),
-    newHtml("instructions3", "instructionspage3.html")
-    .print(),
-    newKey(" ")
-    .wait(),
-    getHtml("instructions3")
-    .remove(),
-    newHtml("instructions4", "instructionspage4.html")
-    .print(),
-    newKey(" ")
-    .wait(),
-    getHtml("instructions4")
-    .remove(),
-    newHtml("instructions5", "instructionspage5.html")
-    .print(),
-    newKey(" ")
-    .wait(),
-    getHtml("instructions5")
-    .remove()
-)
-
-newTrial("startpractice",
-    newText("space","Press the SPACEBAR to begin the practice session.")
-    .settings.css("font-size", "x-large")
-    .print(),
-    newKey(" ")
-    .wait(),
-    getText("space")
-    .remove()
-)
-Template("PracticeBlock.csv" , row =>
-    newTrial("practiceblock",
-    newText("sep", "+++ Ready? +++")
-        .settings.css("font-size", "x-large")
-        .print(),
-     newTimer(1000)
-        .start()
         .wait()
-        .remove(),
-    getText("sep")
-        .remove(),
-    newController("DashedSentence", {s: row.Sentence , mode: "speeded acceptability",
-        wordTime : 200, 
-        wordPauseTime : 40,
-        display: "in place"})
-        .settings.css("font-size", "x-large")
-        .print()
-        .wait(),
-    newText("frameD", " [ D ] ")
-        .settings.css("font-size", "xx-large")
-        .bold()
-        .css("border","display: inline-block", "width: 50px", "border: 1px solid #000","text-align : center")
-        .print(),
-    newText("frameK", " [ K ] ")
-        .settings.css("font-size", "xx-large")
-        .bold()
-        .print(),
-    newText("true", "True")
-        .italic()
-        .print(),
-    newText("false", "False")
-        .italic()
-        .print(),
-    newText("answer", "Press the key 'D' (True) or the key 'K' (False) to answer.")
-        .settings.css("font-size", "medium")
-        .italic()
-        .print(),
-    newCanvas("canvas1", 450,200)
-        .add(135 , 0 , getText("frameD"))
-        .add(155, 40 , getText("true"))
-        .add(300 , 0, getText("frameK"))
-        .add(320 , 40, getText("false"))
-        .add(80, 100, getText("answer"))
-        .print(),
-    newKey("DK")
-        .log()
-        .wait(),
-    getCanvas("canvas1")
-        .remove(),
-    newText("nextsentence", "Press the SPACEBAR for the next sentence.")
-        .settings.css("font-size", "x-large")
-        .print()
-        .log(),
-    newKey(" ")
-        .wait(),
-    getText("nextsentence")
+    ,
+    getText("text1")
         .remove()
+    ,
+    getText("text3")
+        .remove()
+    ,
+    getText("text4")
+        .remove()
+    ,
+    getText("text5")
+        .remove()
+    ,
+    getText("text2")
+        .remove()
+    ,
+    getText("text66")
+        .remove()
+    ,
+    //getTextInput("ID")
+    //    .remove()
+    //,
+    getButton("button1")
+        .remove()
+    ,
+    newHtml("consentInfo", "consentInfo.html")
+        .settings.log()
+        .print()
+    ,
+    newButton("button2", "continue")
+        .print()
+        .wait(getHtml("consentInfo").test.complete()
+            .failure( getHtml("consentInfo").warn() ) // wait and display warning message if not all the obligatory fields in the html document are filled
+          )
+    ,
+    getHtml("consentInfo")
+        .remove()
+    ,
+    getButton("button2")
+        .remove()
+    ,
+
+    newHtml("instructions", "instructions.html")
+        .print()
+    ,
+    newButton("button4", "continue")
+        .print()
+        .wait()
+    ,
+    getHtml("instructions")
+        .remove()
+    ,
+    getButton("button4")
+        .remove()
+    ,
+    newHtml("instructions2", "instructions2.html")
+        .print()
+    ,
+    newButton("button44", "continue")
+        .print()
+        .wait()
+    ,
+    getHtml("instructions2")
+        .remove()
+    ,
+    getButton("button44")
+        .remove()
+    ,
+    newHtml("VPInfo", "VPInfo.html")
+        .settings.log() // log inputs in html
+        .print()
+    ,
+    newButton("vpbutton","continue")
+        .print()
+        .wait(
+          getHtml("VPInfo").test.complete()
+            .failure( getHtml("VPInfo").warn() )
+        )
+    ,
+          getHtml("VPInfo")
+        .remove()
+    ,
+    getButton("vpbutton")
+        .remove()
+      ,          
+    newHtml("instructions3", "instructions3.html")
+        .print()
+    ,
+    newButton("button5", "start the experiment")
+        .print()
+        .wait()
+    ,
+    getHtml("instructions3")
+        .remove()
+    ,
+    getButton("button5")
+        .remove()
+    
 )
-    .log("Item", row.Item)
-)
+    .log("list", "na")
+         .log("condition", "welcome")
+         .log("Item", "intro")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+
+Template("PracticeBlock.csv" , row =>
+         newTrial("practiceblock",
+                  newText("sep", "Wait for next trial...")
+                  .settings.css("font-size", "x-large")
+                  .print(),
+                  newTimer(2000)
+                  .start()
+                  .wait()
+                  .remove(),
+                  getText("sep")
+                  .remove(),
+                  newController("DashedSentence", {s: row.Sentence , mode: "speeded acceptability",
+                                                   wordTime : 500,
+                                                   wordPauseTime : 40,
+                                                   display: "in place"})
+                  .settings.css("font-size", "x-large")
+                  .print()
+                  .wait(),
+                  newText("frameD", " [ F ] ")
+                  .settings.css("font-size", "xx-large")
+                  .bold()
+                  .css("border","display: inline-block", "width: 50px", "border: 1px solid #000","text-align : center")
+                  .print(),
+                  newText("frameK", " [ J ] ")
+                  .settings.css("font-size", "xx-large")
+                  .bold()
+                  .print(),
+                  newText("true", "True")
+                  .italic()
+                  .print(),
+                  newText("false", "False")
+                  .italic()
+                  .print(),
+                  newText("answer", "Press the key 'F' (False) or the key 'J' (True) to answer.")
+                  .settings.css("font-size", "medium")
+                  .italic()
+                  .print(),
+                  newCanvas("canvas1", 450,200)
+                  .add(135 , 0 , getText("frameD"))
+                  .add(155, 40 , getText("false"))
+                  .add(300 , 0, getText("frameK"))
+                  .add(320 , 40, getText("true"))
+                  .add(80, 100, getText("answer"))
+                  .print(),
+                  newKey("FJ")
+                  .log()
+                  .wait(),
+                  getCanvas("canvas1")
+                  .remove(),
+                  newText("nextsentence", "Press the SPACEBAR for the next sentence.")
+                  .settings.css("font-size", "x-large")
+                  .print()
+                  .log(),
+                  newKey(" ")
+                  .wait(),
+                  getText("nextsentence")
+                  .remove()
+                 )
+         .log("list", "na")
+         .log("condition", "na")
+         .log("Item", "practice")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+        );
 
 newTrial("beginblock1",
-    newText("space","This marks the end of the practice session and the start of Block 1. Press the SPACEBAR to continue.")
-    .settings.css("font-size", "x-large")
-    .print(),
+         newText("space","This marks the end of the practice session and the start of Block 1. Press the SPACEBAR to continue. Remember to keep your index fingers on the F and J keys!")
+         .settings.css("font-size", "x-large")
+         .print(),
+         
+         newKey(" ")
+         .wait(),
+         getText("space")
+         .remove()
+         .log("list", "na")
+         .log("condition", "na")
+         .log("Item", "beginBlock1")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+        )
+    .log("list", "na")
+         .log("condition", "na")
+         .log("Item", "beginBlock1")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+    ;
 
-    newKey(" ")
-    .wait(),
-    getText("space")
-    .remove()
-)
 
-Template("Block1.csv" , row =>
-    newTrial("block1",
-    newText("sep", "+++ Ready? +++")
-        .settings.css("font-size", "x-large")
-        .print(),
-     newTimer(1000)
-        .start()
-        .wait()
-        .remove(),
-    getText("sep")
-        .remove(),
-    newController("DashedSentence", {s: row.Sentence , mode: "speeded acceptability",
-        wordTime : 200, 
-        wordPauseTime : 40,
-        display: "in place"})
-        .settings.css("font-size", "x-large")
-        .print()
-        .wait(),
-    newText("frameD", " [ D ] ")
-        .settings.css("font-size", "x-large")
-        .bold()
-        .print(),
-    newText("frameK", " [ K ] ")
-        .settings.css("font-size", "x-large")
-        .bold()
-        .print(),
-    newText("true", "True")
-        .italic()
-        .print(),
-    newText("false", "False")
-        .italic()
-        .print(),
-    newText("answer", "Press the key 'D' (True) or the key 'K' (False) to answer.")
-        .settings.css("font-size", "medium")
-        .italic()
-        .print(),
-    newCanvas("canvas1", 450,200)
-        .add(135 , 0 , getText("frameD"))
-        .add(155, 40 , getText("true"))
-        .add(300 , 0, getText("frameK"))
-        .add(320 , 40, getText("false"))
-        .add(80, 100, getText("answer"))
-        .print(),
-    newKey("DK")
-        .log()
-        .wait(),
-    getCanvas("canvas1")
-        .remove(),
-    newText("nextsentence", "Press the SPACEBAR for the next sentence.")
-        .settings.css("font-size", "x-large")
-        .print()
-        .log(),
-    newKey(" ")
-        .wait(),
-    getText("nextsentence")
-        .remove()
-)
-    .log("Group", row.Group)
-    .log("Type", row.Type)
-    .log("Item", row.Item)
-)
+Template("master_list.csv" , row => PennController(row.condition,
+                                                   newText("sep", "Wait for next trial...")
+                                                   .settings.css("font-size", "x-large")
+                                                   .print(),
+                                                   newTimer(2000)
+                                                   .start()
+                                                   .wait()
+                                                   .remove(),
+                                                   getText("sep")
+                                                   .remove(),
+                                                   newController("DashedSentence", {s: row.sentence , mode: "speeded acceptability",
+                                                                                    wordTime : 500,
+                                                                                    wordPauseTime : 40,
+                                                                                    display: "in place"})
+                                                   .settings.css("font-size", "x-large")
+                                                   .print()
+                                                   .wait(),
+                                                   newText("frameF", " [ F ] ")
+                                                   .settings.css("font-size", "x-large")
+                                                   .bold()
+                                                   .print(),
+                                                   newText("frameJ", " [ J ] ")
+                                                   .settings.css("font-size", "x-large")
+                                                   .bold()
+                                                   .print(),
+                                                   newText("true", "True")
+                                                   .italic()
+                                                   .print(),
+                                                   newText("false", "False")
+                                                   .italic()
+                                                   .print(),
+                                                   newText("answer", "Press the key 'F' (False) or the key 'J' (True) to answer.")
+                                                   .settings.css("font-size", "medium")
+                                                   .italic()
+                                                   .print(),
+                                                   newCanvas("canvas1", 450,200)
+                                                   .add(135 , 0 , getText("frameF"))
+                                                   .add(155, 40 , getText("false"))
+                                                   .add(300 , 0, getText("frameJ"))
+                                                   .add(320 , 40, getText("true"))
+                                                   .add(80, 100, getText("answer"))
+                                                   .print(),
+                                                   newKey("FJ")
+                                                   .log()
+                                                   .wait(),
+                                                   getCanvas("canvas1")
+                                                   .remove(),
+                                                   newText("nextsentence", "Press the SPACEBAR for the next sentence.")
+                                                   .settings.css("font-size", "x-large")
+                                                   .print()
+                                                   .log(),
+                                                   newKey(" ")
+                                                   .wait(),
+                                                   getText("nextsentence")
+                                                   .remove()
+                                                  )
+         .log("list", row.Group)
+         .log("condition", row.condition)
+         .log("Item", row.item)
+         .log("category", row.category)
+         .log("sentence", row.sentence)
+         .log("quantifier", row.quantifier)
+         .log("noun", row.noun)
+         
+        );
 
 newTrial("beginblock2",
-    newText("space","This marks the end of Block 1 and the start of Block 2. Press the SPACEBAR to continue.")
-    .settings.css("font-size", "x-large")
-    .print(),
+         newText("space","This marks the end of Block 1 and the start of Block 2. Press the SPACEBAR to continue. Remember to keep your index fingers on the F and J keys!")
+         .settings.css("font-size", "x-large")
+         .print(),
+         
+         newKey(" ")
+         .wait(),
+         getText("space")
+         .remove()
+         .log("list", "na")
+         .log("condition", "na")
+         .log("Item", "practice")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+        )
+     .log("list", "na")
+         .log("condition", "na")
+         .log("Item", "beginBlock2")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+    ;
 
-    newKey(" ")
-    .wait(),
-    getText("space")
-    .remove()
-)
-
-Template("Block2.csv" , row =>
-    newTrial("block2",
-    newText("sep", "+++ Ready? +++")
-        .settings.css("font-size", "x-large")
-        .print(),
-     newTimer(1000)
-        .start()
-        .wait()
-        .remove(),
-    getText("sep")
-        .remove(),
-    newController("DashedSentence", {s: row.Sentence , mode: "speeded acceptability",
-        wordTime : 200, 
-        wordPauseTime : 40,
-        display: "in place"})
-        .settings.css("font-size", "x-large")
-        .print()
-        .wait(),
-    newText("frameD", " [ D ] ")
-        .settings.css("font-size", "xx-large")
-        .bold()
-        .print(),
-    newText("frameK", " [ K ] ")
-        .settings.css("font-size", "xx-large")
-        .bold()
-        .print(),
-    newText("true", "True")
-        .italic()
-        .print(),
-    newText("false", "False")
-        .italic()
-        .print(),
-    newText("answer", "Press the key 'D' (True) or the key 'K' (False) to answer.")
-        .settings.css("font-size", "medium")
-        .italic()
-        .print(),
-    newCanvas("canvas1", 450,200)
-        .add(135 , 0 , getText("frameD"))
-        .add(155, 40 , getText("true"))
-        .add(300 , 0, getText("frameK"))
-        .add(320 , 40, getText("false"))
-        .add(80, 100, getText("answer"))
-        .print(),
-    newKey("DK")
-        .log()
-        .wait(),
-    getCanvas("canvas1")
-        .remove(),
-    newText("nextsentence", "Press the SPACEBAR for the next sentence.")
-        .settings.css("font-size", "x-large")
-        .print()
-        .log(),
-    newKey(" ")
-        .wait(),
-    getText("nextsentence")
-        .remove()
-)
-    .log("Group", row.Group)
-    .log("Type", row.Type)
-    .log("Item", row.Item)
-)
 
 newTrial("beginblock3",
-    newText("space","This marks the end of Block 2 and the start of Block 3. Press the SPACEBAR to continue.")
-    .settings.css("font-size", "x-large")
-    .print(),
+         newText("space","This marks the end of Block 2 and the start of Block 3. Press the SPACEBAR to continue. Remember to keep your index fingers on the F and J keys!")
+         .settings.css("font-size", "x-large")
+         .print(),
+         
+         newKey(" ")
+         .wait(),
+         getText("space")
+         .remove()
+                  .log("list", "na")
+         .log("condition", "na")
+         .log("Item", "practice")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+        )
+     .log("list", "na")
+         .log("condition", "na")
+         .log("Item", "beginBlock3")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+    ;
 
-    newKey(" ")
-    .wait(),
-    getText("space")
-    .remove()
-)
 
-Template("Block3.csv" , row =>
-    newTrial("block3",
-    newText("sep", "+++ Ready? +++")
-        .settings.css("font-size", "x-large")
-        .print(),
-     newTimer(1000)
-        .start()
-        .wait()
-        .remove(),
-    getText("sep")
-        .remove(),
-    newController("DashedSentence", {s: row.Sentence , mode: "speeded acceptability",
-        wordTime : 200, 
-        wordPauseTime : 40,
-        display: "in place"})
-        .settings.css("font-size", "x-large")
-        .print()
-        .wait(),
-    newText("frameD", " [ D ] ")
-        .settings.css("font-size", "xx-large")
-        .bold()
-        .print(),
-    newText("frameK", " [ K ] ")
-        .settings.css("font-size", "xx-large")
-        .bold()
-        .print(),
-    newText("true", "True")
-        .italic()
-        .print(),
-    newText("false", "False")
-        .italic()
-        .print(),
-    newText("answer", "Press the key 'D' (True) or the key 'K' (False) to answer.")
-        .settings.css("font-size", "medium")
-        .italic()
-        .print(),
-    newCanvas("canvas1", 450,200)
-        .add(135 , 0 , getText("frameD"))
-        .add(155, 40 , getText("true"))
-        .add(300 , 0, getText("frameK"))
-        .add(320 , 40, getText("false"))
-        .add(80, 100, getText("answer"))
-        .print(),
-    newKey("DK")
-        .log()
-        .wait(),
-    getCanvas("canvas1")
-        .remove(),
-    newText("nextsentence", "Press the SPACEBAR for the next sentence.")
-        .settings.css("font-size", "x-large")
-        .print()
-        .log(),
-    newKey(" ")
-        .wait(),
-    getText("nextsentence")
-        .remove()
-)
-    .log("Group", row.Group)
-    .log("Type", row.Type)
-    .log("Item", row.Item)
-)
 newTrial("exitform",  
-    newHtml("debrief", "debrief.html")
-    .print()
-    .log(),
-    newButton("Submit answers")
-    .print()
-    .wait(),
-    getHtml("debrief")
-    .remove()
-)
-// Spaces and linebreaks don't matter to the script: we've only been using them for the sake of readability
-newTrial( "bye" ,
-    newText("Thank you for your participation!").print(),
-    newButton().wait()  // Wait for a click on a non-displayed button = wait here forever
-)
+         newHtml("debrief", "debrief.html")
+         .print()
+         .log(),
+         newButton("Submit answers")
+         .print()
+         .wait(),
+         getHtml("debrief")
+         .remove()
+         
+        )
+     .log("list", "na")
+         .log("condition", "na")
+         .log("Item", "debrief")
+         .log("category", "na")
+         .log("sentence", "na")
+         .log("quantifier", "na")
+         .log("noun", "na")
+    ;
 
-.setOption( "countsForProgressBar" , false )
-// Make sure the progress bar is full upon reaching this last (non-)trial
+
+PennController.SendResults( "send" );
+
+
+PennController("bye",
+    newText("<p>This is the end of the experiment. Thank you for your participation!</p>")
+        .print()
+    ,
+    newCanvas("empty6", 1, 10)
+        .print()
+    ,
+    newText("<p><a href='https://app.prolific.co/submissions/complete?cc=4925D823' target='_blank'>Click here to confirm your participation.</a></p>")
+        .print()
+    ,
+    newText("<p>You can close the window now.</p>")
+        .print()
+    ,
+    newButton("void") // create an empty button that makes the screen stay
+        .wait()
+  )
